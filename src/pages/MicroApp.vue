@@ -1,8 +1,8 @@
 <script setup>
-import { computed, reactive, watch } from 'vue'
+import { computed, onMounted, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { bus } from 'wujie'
-import { appUrl, resolveMicro } from '../config/apps'
+import { bus, preloadApp } from 'wujie'
+import { APPS, appUrl, resolveMicro } from '../config/apps'
 import { themeState } from '../store/theme'
 
 const route = useRoute()
@@ -28,6 +28,22 @@ watch(
   },
   { immediate: true }
 )
+
+// 空闲时预加载其余子应用，避免首次点击出现明显等待
+onMounted(() => {
+  const run = () => {
+    APPS.forEach((app) => {
+      if (app.name === activeApp.value?.name) return
+      try {
+        preloadApp({ name: app.name, url: appUrl(app.name) })
+      } catch (err) {
+        console.warn('[wujie2] preload failed', app.name, err)
+      }
+    })
+  }
+  if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 1500 })
+  else setTimeout(run, 1200)
+})
 
 watch(
   () => themeState.skin,
