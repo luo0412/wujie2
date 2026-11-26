@@ -6,7 +6,7 @@ import { tabState } from '../store/tabs'
 import { SKINS } from '../store/theme'
 
 const emit = defineEmits(['auth'])
-const open = ref(true)
+const open = ref(window.innerWidth >= 900)
 
 const authLabel = computed(() => {
   const s = authState.status

@@ -6,7 +6,9 @@ import { buildGroups } from '../config/apps'
 const router = useRouter()
 const route = useRoute()
 const groups = buildGroups()
+const props = defineProps({ open: { type: Boolean, default: false } })
 const collapsed = ref({})
+const emit = defineEmits(['navigate'])
 
 const activeKey = computed(() => route.path)
 
@@ -15,14 +17,16 @@ function toggle(key) {
 }
 
 function go(item) {
-  const target = item.query ? { path: item.path, query: item.query } : item.path
-  router.push(target)
+  const target = item.key || item.path
+  if (!target) return
+  router.push(item.query ? { path: target, query: item.query } : target)
+  emit('navigate', target)
 }
 </script>
 
 <template>
-  <aside class="sidebar">
-    <div class="brand" @click="router.push('/home')">
+  <aside class="sidebar" :class="{ 'is-open': open }">
+    <div class="brand" @click="router.push('/home'); emit('navigate', '/home')">
       <span class="brand__logo">WJ</span>
       <span class="brand__text">
         wujie2 主应用

@@ -73,12 +73,13 @@ export function resolveMicro(path) {
 
 export function buildGroups() {
   return [
-    { key: 'main', title: '主应用', children: MAIN_MENUS.map((m) => ({ ...m, key: m.path })) },
+    { key: 'main', title: '主应用', children: MAIN_MENUS.map((m) => ({ ...m, key: m.path, path: m.path })) },
     ...APPS.map((app) => ({
       key: app.name,
       title: app.title,
       children: app.pages.map((p) => ({
         key: `/micro/${app.name}${p.path}`,
+        path: `/micro/${app.name}${p.path}`,
         title: p.title,
         badge: p.keepAlive === false ? '不保活' : '',
       })),

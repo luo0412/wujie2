@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, watchEffect } from 'vue'
+import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { bus } from 'wujie'
 import ShellSidebar from './components/ShellSidebar.vue'
@@ -23,6 +23,8 @@ const crumb = computed(() => {
 })
 
 const skinLabel = computed(() => (themeState.dark ? '深色' : '浅色'))
+const navOpen = ref(false)
+const isNarrow = () => window.innerWidth < 900
 
 watchEffect(() => {
   document.title = `wujie2 + ${skinLabel.value}`
@@ -48,13 +50,17 @@ function onAuth(action) {
 
 <template>
   <div class="shell">
-    <ShellSidebar />
+    <ShellSidebar :open="navOpen" @navigate="navOpen = false" />
+    <div v-if="navOpen" class="nav-mask" @click="navOpen = false" />
     <div class="main">
       <header class="header">
-        <div class="crumbs">
-          <span>{{ crumb.group }}</span>
-          <span>/</span>
-          <strong>{{ crumb.title }}</strong>
+        <div class="header__left">
+          <button class="icon-btn burger" title="菜单" @click="navOpen = true">☰</button>
+          <div class="crumbs">
+            <span class="crumbs__group">{{ crumb.group }}</span>
+            <span class="crumbs__sep">/</span>
+            <strong>{{ crumb.title }}</strong>
+          </div>
         </div>
         <div class="header__actions">
           <button class="icon-btn" :title="`当前皮肤：${skinLabel}`" @click="setDark(!themeState.dark)">
