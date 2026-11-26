@@ -1,11 +1,20 @@
 <script setup>
-import { onBeforeUnmount, ref, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import AboutPage from './views/About.vue'
+import UserPage from './views/User.vue'
+import NoCachePage from './views/NoCache.vue'
+import RichTextPage from './views/RichText.vue'
 
 const wj = window.$wujie
 const path = ref('/about')
-const text = ref('')
-const rich = ref('<p>Hello wujie</p>')
 const ping = ref(null)
+
+const pages = {
+  '/about': AboutPage,
+  '/user': UserPage,
+  '/no-cache': NoCachePage,
+  '/rich-text': RichTextPage,
+}
 
 const views = [
   { path: '/about', title: '关于' },
@@ -14,12 +23,23 @@ const views = [
   { path: '/rich-text', title: '富文本编辑器' },
 ]
 
+// 只有保活页进入 KeepAlive 缓存
+const cached = ['AboutPage', 'UserPage', 'RichTextPage']
+const current = computed(() => pages[path.value] || AboutPage)
+
+let lastProp = null
 function readProps() {
   const p = wj?.props?.path
-  if (p) path.value = p
+  if (!p || p === lastProp) return
+  lastProp = p
+  if (pages[p] && p !== path.value) path.value = p
 }
-watchEffect(readProps)
-const timer = setInterval(readProps, 400)
+readProps()
+const timer = setInterval(readProps, 300)
+
+wj?.bus?.$on('wj2:route', (payload) => {
+  if (payload?.app === 'app1' && pages[payload.path]) path.value = payload.path
+})
 
 wj?.bus?.$on('wj2:ping', (payload) => {
   ping.value = payload
@@ -52,31 +72,9 @@ function go(p) {
       </button>
     </div>
 
-    <div v-if="path === '/about'" class="card">
-      <h3>关于</h3>
-      <p>我是 App1，由 wujie 以 iframe 沙箱方式挂载，路由由主应用通过 props 桥接。</p>
-      <input v-model="text" placeholder="在子应用里随便输入，然后切换页签再回来" />
-      <span class="small">子应用状态由 wujie alive 保活，切换页签后仍然保留。</span>
-    </div>
-
-    <div v-else-if="path === '/user'" class="card">
-      <h3>用户</h3>
-      <p>用户名：<b>app1-user</b> · 角色：子应用演示账号</p>
-      <input v-model="text" placeholder="输入内容会在子应用内保留" />
-    </div>
-
-    <div v-else-if="path === '/no-cache'" class="card">
-      <h3>临时表单 <span class="tag">不保活</span></h3>
-      <p>该页面在主应用里 keepAlive = false，每次进入都会重新挂载视图。</p>
-      <input v-model="text" placeholder="随便输入" />
-    </div>
-
-    <div v-else class="card">
-      <h3>富文本编辑器</h3>
-      <textarea v-model="rich" rows="5" placeholder="输入 HTML 片段" />
-      <pre v-html="rich" />
-      <span class="small">示例用 textarea 模拟富文本输入，实时渲染预览。</span>
-    </div>
+    <KeepAlive :include="cached" :max="8">
+      <component :is="current" :key="path" />
+    </KeepAlive>
 
     <div v-if="ping" class="card" style="margin-top: 12px">
       <h3>收到主应用 bus 事件</h3>

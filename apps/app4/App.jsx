@@ -7,20 +7,73 @@ const VIEWS = [
   { path: '/counter', title: 'React 计数器' },
 ]
 
+// 每个页面是独立组件，各自持有独立 state
+function AboutPage() {
+  const [text, setText] = useState('')
+  return (
+    <div className="card">
+      <h3>关于</h3>
+      <p>我是 App4，React 子应用，跑在 wujie 沙箱里，与 Vue 主应用共享页签与事件总线。</p>
+      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="本页输入，切页再回来" />
+      <span className="small">页面级保活：每个页面组件独享自己的 state。</span>
+    </div>
+  )
+}
+
+function UserPage() {
+  const [text, setText] = useState('')
+  return (
+    <div className="card">
+      <h3>用户</h3>
+      <p>用户名：<b>app4-user</b></p>
+      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="本页独立输入框" />
+    </div>
+  )
+}
+
+function NoCachePage() {
+  const [text, setText] = useState('')
+  return (
+    <div className="card">
+      <h3>临时表单 <span className="tag">不保活</span></h3>
+      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="离开本页后输入会被清空" />
+      <span className="small">该页不常驻，离开即卸载。</span>
+    </div>
+  )
+}
+
+function CounterPage() {
+  const [count, setCount] = useState(0)
+  return (
+    <div className="card">
+      <h3>React 计数器</h3>
+      <p>计数：<b>{count}</b></p>
+      <button className="badge" style={{ cursor: 'pointer' }} onClick={() => setCount(count + 1)}>＋ 加一</button>
+    </div>
+  )
+}
+
+const KEPT = [
+  { path: '/about', el: AboutPage },
+  { path: '/user', el: UserPage },
+  { path: '/counter', el: CounterPage },
+]
+
 export default function App() {
   const [path, setPath] = useState('/about')
-  const [text, setText] = useState('')
-  const [count, setCount] = useState(0)
   const [ping, setPing] = useState(null)
 
   useEffect(() => {
     const wj = window.$wujie
+    let lastProp = null
     const read = () => {
       const p = wj && wj.props && wj.props.path
-      if (p) setPath(p)
+      if (!p || p === lastProp) return
+      lastProp = p
+      setPath((cur) => (cur === p ? cur : p))
     }
     read()
-    const timer = setInterval(read, 400)
+    const timer = setInterval(read, 300)
     if (wj && wj.bus) {
       wj.bus.$on('wj2:route', (payload) => {
         if (payload && payload.app === 'app4') setPath(payload.path)
@@ -54,31 +107,13 @@ export default function App() {
         ))}
       </div>
 
-      {path === '/about' && (
-        <div className="card">
-          <h3>关于</h3>
-          <p>我是 App4，React 子应用，跑在 wujie 沙箱里，与 Vue 主应用共享页签与事件总线。</p>
-          <input value={text} onChange={(e) => setText(e.target.value)} placeholder="随便输入，然后切换页签再回来" />
-          <span className="small">alive 保活：切回本页时 React 状态仍在。</span>
+      {KEPT.map(({ path: p, el: Page }) => (
+        <div key={p} hidden={path !== p}>
+          <Page />
         </div>
-      )}
+      ))}
 
-      {path === '/counter' && (
-        <div className="card">
-          <h3>React 计数器</h3>
-          <p>计数：<b>{count}</b></p>
-          <button className="nav" onClick={() => setCount(count + 1)} style={{ padding: 0, border: 0 }}>
-            <span className="badge" style={{ cursor: 'pointer' }}>＋ 加一</span>
-          </button>
-        </div>
-      )}
-
-      {(path === '/user' || path === '/no-cache') && (
-        <div className="card">
-          <h3>{path === '/user' ? '用户' : '临时表单'}</h3>
-          <input value={text} onChange={(e) => setText(e.target.value)} placeholder="输入内容会在子应用内保留" />
-        </div>
-      )}
+      {path === '/no-cache' && <NoCachePage />}
 
       {ping && (
         <div className="card" style={{ marginTop: 12 }}>

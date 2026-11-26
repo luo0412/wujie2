@@ -83,7 +83,7 @@ function onAuth(action) {
       <div class="content">
         <RouterView v-slot="{ Component, route: current }">
           <KeepAlive :include="keepAliveInclude" :max="12">
-            <component :is="Component" :key="current.path" />
+            <component :is="Component" :key="current.name === 'MicroApp' ? 'micro-host' : current.path" />
           </KeepAlive>
         </RouterView>
       </div>
